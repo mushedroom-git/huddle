@@ -26,10 +26,7 @@ export function Landing() {
           <h1 className="text-[3.1rem] font-semibold leading-[0.95] tracking-tight sm:text-7xl md:text-5xl lg:text-6xl xl:text-[4.6rem]">
             A more meaningful
             <span className="mt-1 block">
-              <span className="relative inline-block">
-                way to meet.
-                <span aria-hidden className="absolute -bottom-[0.08em] left-0 h-[0.14em] w-[72%] rounded-full bg-green" />
-              </span>
+              <span className="underline decoration-green decoration-[0.11em] underline-offset-[0.12em] [text-decoration-skip-ink:all]">way to meet.</span>
             </span>
           </h1>
           <p className="mt-6 max-w-sm text-lg leading-snug text-muted sm:text-xl">

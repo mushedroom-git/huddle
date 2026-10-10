@@ -46,7 +46,7 @@ export function Organizer() {
   }
 
   return (
-    <div className="absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-16">
+    <div className="sheet-in absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-16">
       <ScreenHeader title="Run the day" onBack={nav.close} />
       <p className="text-sm leading-relaxed text-muted">Change it here. The room sees it straight away.</p>
 

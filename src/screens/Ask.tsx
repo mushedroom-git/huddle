@@ -27,7 +27,7 @@ export function Ask() {
   return (
     <div className={frame === 'phone' ? 'px-4 pb-4' : 'mx-auto w-full max-w-5xl px-8 pb-8'}>
       <div className="pb-3">
-        <h1 className="text-[1.7rem] font-semibold tracking-tight">Participate</h1>
+        <h1 className="text-[2rem] font-extrabold leading-tight tracking-tight">Participate</h1>
         <p className="mt-0.5 text-sm text-muted">Ask questions, share a commitment, and rate the day.</p>
       </div>
       <div
@@ -125,7 +125,7 @@ function Questions() {
         })}
       </div>
 
-      <div className="mt-3 space-y-3 xl:columns-2 xl:gap-3 xl:space-y-0">
+      <div className="stagger mt-3 space-y-3 xl:columns-2 xl:gap-3 xl:space-y-0">
         {questions.map((question) => {
           const count = voteCount(state, question.id)
           const voted = hasVoted(state, question.id, me.id)
@@ -144,7 +144,7 @@ function Questions() {
                 className={`flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl py-2 ${voted ? 'bg-green text-ink' : 'bg-green/10 text-ink'}`}
               >
                 <Icon name="up" className="h-4 w-4" />
-                <span className="text-lg font-semibold leading-none">{count}</span>
+                <span key={count} className="pop text-lg font-extrabold leading-none tabular-nums">{count}</span>
                 <span className="text-[10px] font-medium leading-none">{voted ? 'Voted' : 'Vote'}</span>
               </button>
               <div className="min-w-0 flex-1">

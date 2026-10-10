@@ -26,7 +26,7 @@ export function Group() {
     <div className={wide ? 'mx-auto grid w-full max-w-5xl grid-cols-[minmax(260px,380px)_minmax(0,1fr)] items-start gap-6 px-8 pb-10' : 'px-4 pb-4'}>
       {wide || !active ? (
         <div>
-          <h1 className="text-[1.7rem] font-semibold tracking-tight">Group</h1>
+          <h1 className="text-[2rem] font-extrabold leading-tight tracking-tight">Group</h1>
           <p className="mt-0.5 text-sm text-muted">
             {state.participants.length} participants · {groups.length} groups
           </p>
@@ -35,36 +35,36 @@ export function Group() {
               {challengerCount} challengers rotate across groups
             </p>
           ) : null}
-          <ul className="mt-4 flex flex-col gap-3">
+          <ul className="stagger mt-4 flex flex-col gap-3">
             {groups.map((group) => {
               const members = membersOf(group)
               const faces = members.slice(0, 4)
               const extra = members.length - faces.length
               const selected = active?.id === group.id
+              const yours = group.id === mine?.id
               return (
                 <li key={group.id}>
                   <button
                     type="button"
                     onClick={() => setPicked(group.id)}
-                    className={`flex w-full items-center gap-3 rounded-[22px] bg-[#021C37] p-4 text-left text-white ${selected && wide ? 'ring-2 ring-green' : ''}`}
+                    className={`flex w-full items-center gap-3 p-4 text-left ${yours ? 'hero-panel rounded-[26px] py-5' : 'rounded-[22px] bg-paper'} ${selected && wide ? 'ring-2 ring-green' : ''}`}
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-green">{group.code}</span>
-                      <span className="mt-0.5 block text-[1.05rem] font-semibold leading-tight">{group.title}</span>
-                      <span className="mt-1 block text-sm text-white/70">
+                      <span className="eyebrow text-green">{yours ? `${group.code} · Your group` : group.code}</span>
+                      <span className={`mt-0.5 block font-bold leading-tight tracking-tight ${yours ? 'text-[1.4rem]' : 'text-[1.1rem]'}`}>{group.title}</span>
+                      <span className={`mt-1 block text-sm ${yours ? 'text-white/70' : 'text-muted'}`}>
                         {members.length} participant{members.length === 1 ? '' : 's'}
-                        {group.id === mine?.id ? ' · Your group' : ''}
                       </span>
                       <span className="mt-2 flex items-center">
                         {faces.map((person, index) => (
-                          <span key={person.id} className={index === 0 ? '' : '-ml-2'} style={{ zIndex: faces.length - index }}>
-                            <Avatar person={person} size={26} className="ring-2 ring-[#021C37]" />
+                          <span key={person.id} className={index === 0 ? '' : '-ml-1'} style={{ zIndex: faces.length - index }}>
+                            <Avatar person={person} size={yours ? 36 : 32} className={`align-top ring-2 ${yours ? 'ring-[#0a2a3c]' : 'ring-paper'}`} />
                           </span>
                         ))}
-                        {extra > 0 ? <span className="ml-2 text-xs font-semibold text-white/80">+{extra}</span> : null}
+                        {extra > 0 ? <span className={`ml-2 text-xs font-semibold ${yours ? 'text-white/80' : 'text-muted'}`}>+{extra}</span> : null}
                       </span>
                     </span>
-                    <Icon name="chevron" className="h-5 w-5 shrink-0 text-green" />
+                    <Icon name="chevron" className={`h-5 w-5 shrink-0 ${yours ? 'text-green' : 'text-muted'}`} />
                   </button>
                 </li>
               )
@@ -117,9 +117,9 @@ function Detail({
           Group
         </button>
       ) : null}
-      <div className="rounded-[24px] bg-[#021C37] p-5 text-white">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-green">{group.code}</p>
-        <h2 className="mt-1 text-[1.55rem] font-semibold leading-tight">{group.title}</h2>
+      <div className="hero-panel rounded-[26px] p-5">
+        <p className="eyebrow text-green">{group.code}</p>
+        <h2 className="mt-1 text-[1.7rem] font-extrabold leading-tight tracking-tight">{group.title}</h2>
         <p className="mt-1 text-sm text-white/70">
           {members.length} participant{members.length === 1 ? '' : 's'}
           {note ? ` · ${note}` : ''}
@@ -147,7 +147,7 @@ function Detail({
         </button>
       </div>
       <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Participants</p>
-      <ul className="overflow-hidden rounded-[22px] bg-paper">
+      <ul className="stagger overflow-hidden rounded-[22px] bg-paper">
         {members.map((person) => (
           <li key={person.id} className="border-b border-line last:border-b-0">
             <button type="button" onClick={() => onOpen(person.id)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">

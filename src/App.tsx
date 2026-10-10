@@ -102,15 +102,20 @@ function Shell() {
 
 function Phone() {
   const { state, dispatch } = useStore()
+  const { tab } = useNav()
 
   return (
     <div className="room relative mx-auto h-dvh w-full max-w-[440px] overflow-hidden text-ink">
-      <div className="h-full overflow-y-auto pb-28">
+      <div className="h-full overflow-y-auto pb-32">
+        {/* Home opens on the profile banner, which carries the theme toggle, so it needs no app header. */}
+        {tab === 'home' ? (
+          <div style={{ paddingTop: 'env(safe-area-inset-top)' }} />
+        ) : (
         <header className="sticky top-0 z-30 bg-cream/75 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex h-14 items-center justify-between px-4">
             <button type="button" onClick={() => dispatch({ type: 'leave' })} className="flex items-center gap-2 text-left">
               <img src="/logo.png" alt="" className="h-9 w-9 rounded-[10px] object-cover" />
-              <span className="text-[15px] font-semibold tracking-tight">The Huddle</span>
+              <span className="text-base font-bold tracking-tight">The Huddle</span>
             </button>
             <span className="ml-auto flex items-center gap-2">
               <ThemeButton />
@@ -118,12 +123,13 @@ function Phone() {
             </span>
           </div>
         </header>
+        )}
         <Screens />
       </div>
       <TabBar className="absolute inset-x-0 bottom-0 z-20" />
       <Overlays where="phone" />
       {state.toast ? (
-        <div className="absolute bottom-24 left-4 right-4 z-[60] rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-cream shadow-lg">{state.toast}</div>
+        <div key={state.toast} className="absolute bottom-28 left-4 right-4 z-[60] rise rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-cream shadow-lg">{state.toast}</div>
       ) : null}
     </div>
   )
@@ -174,7 +180,7 @@ function Workspace() {
       <Overlays where="wide" />
       {state.toast ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[60] flex justify-center px-4">
-          <div className="w-full max-w-md rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-cream shadow-lg">{state.toast}</div>
+          <div key={state.toast} className="w-full max-w-md rise rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-cream shadow-lg">{state.toast}</div>
         </div>
       ) : null}
     </div>
@@ -185,12 +191,14 @@ function Screens() {
   const { tab } = useNav()
   return (
     <>
-      {tab === 'home' ? <Home /> : null}
-      {tab === 'people' ? <People /> : null}
-      {tab === 'group' ? <Group /> : null}
-      {tab === 'day' ? <Day /> : null}
-      {tab === 'ask' ? <Ask /> : null}
-      {tab === 'me' ? <Me /> : null}
+      <div key={tab} className="rise">
+        {tab === 'home' ? <Home /> : null}
+        {tab === 'people' ? <People /> : null}
+        {tab === 'group' ? <Group /> : null}
+        {tab === 'day' ? <Day /> : null}
+        {tab === 'ask' ? <Ask /> : null}
+        {tab === 'me' ? <Me /> : null}
+      </div>
     </>
   )
 }
@@ -209,14 +217,14 @@ function Rail() {
         {TABS.map((item) => {
           const active = tab === item.id
           return (
-            <button key={item.id} type="button" onClick={() => nav.setTab(item.id)} className={`flex flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium ${active ? 'text-green' : 'text-white/60'}`}>
+            <button key={item.id} type="button" onClick={() => nav.setTab(item.id)} className={`flex flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-semibold transition-colors ${active ? 'bg-white/[0.08] text-green' : 'text-white/60'}`}>
               <Icon name={item.icon} className="h-5 w-5" />
               {item.label}
             </button>
           )
         })}
       </div>
-      <button type="button" onClick={() => nav.setTab('me')} className={`mt-auto flex flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-medium ${tab === 'me' ? 'text-green' : 'text-white/60'}`}>
+      <button type="button" onClick={() => nav.setTab('me')} className={`mt-auto flex flex-col items-center gap-1 rounded-2xl py-2 text-[10px] font-semibold transition-colors ${tab === 'me' ? 'bg-white/[0.08] text-green' : 'text-white/60'}`}>
         <span className="grid h-8 w-8 place-items-center">{view ? <Avatar person={view} size={26} /> : null}</span>
         Me
       </button>
@@ -230,22 +238,33 @@ function TabBar({ className = '' }: { className?: string }) {
   const frame = useFrame()
   const { tab, overlay } = nav
   const quiet = frame === 'phone' && overlay
+  const items = [...TABS.map((item) => item.id), 'me' as const]
+  const index = items.indexOf(tab)
   return (
-    <nav className={`bg-[#021C37] text-white/60 ${className}`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="grid h-[4.25rem] grid-cols-6">
+    <nav className={`px-3 ${className}`} style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+      <div className="relative grid h-[4.25rem] grid-cols-6 rounded-[26px] bg-[#021C37]/95 text-white/55 shadow-[0_18px_40px_-12px_rgba(2,28,55,0.55)] ring-1 ring-white/10 backdrop-blur-xl">
+        {index >= 0 && !quiet ? (
+          <span
+            aria-hidden
+            className="absolute inset-y-1.5 left-0 w-1/6 px-1 transition-transform duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)]"
+            style={{ transform: `translateX(${index * 100}%)` }}
+          >
+            <span className="block h-full rounded-[20px] bg-white/[0.09] ring-1 ring-white/10" />
+          </span>
+        ) : null}
         {TABS.map((item) => {
           const active = tab === item.id && !quiet
           return (
-            <button key={item.id} type="button" onClick={() => nav.setTab(item.id)} className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium leading-none ${active ? 'text-green' : 'text-white/60'}`}>
+            <button key={item.id} type="button" onClick={() => nav.setTab(item.id)} className={`relative flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold leading-none transition-colors ${active ? 'text-green' : 'text-white/55'}`}>
               <span className="grid h-8 w-8 place-items-center">
-                <Icon name={item.icon} className="h-5 w-5" />
+                <Icon name={item.icon} className="h-[22px] w-[22px]" />
               </span>
               {item.label}
             </button>
           )
         })}
-        <button type="button" onClick={() => nav.setTab('me')} className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium leading-none ${tab === 'me' && !quiet ? 'text-green' : 'text-white/60'}`}>
-          <span className="grid h-8 w-8 place-items-center">{view ? <Avatar person={view} size={26} /> : null}</span>
+        <button type="button" onClick={() => nav.setTab('me')} className={`relative flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold leading-none transition-colors ${tab === 'me' && !quiet ? 'text-green' : 'text-white/55'}`}>
+          <span className="grid h-8 w-8 place-items-center">{view ? <Avatar person={view} size={26} className={tab === 'me' && !quiet ? 'ring-2 ring-green' : ''} /> : null}</span>
           Me
         </button>
       </div>
@@ -377,7 +396,7 @@ function SwitchSheet({ onClose, menu = false }: { onClose: () => void; menu?: bo
     )
   }
   return (
-    <div className="absolute inset-0 z-50 flex items-end bg-navy/40" onClick={onClose}>
+    <div className="fade-in absolute inset-0 z-50 flex items-end bg-navy/40" onClick={onClose}>
       <div className="max-h-[80%] w-full overflow-y-auto rounded-t-[28px] bg-cream px-4 pb-8 pt-3" onClick={(event) => event.stopPropagation()}>
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
         {list}

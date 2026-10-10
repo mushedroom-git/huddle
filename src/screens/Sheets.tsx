@@ -16,7 +16,7 @@ export function PersonSheet({ id }: { id: string }) {
   const reason = suggestions(state, me.id).find((item) => item.personId === id)?.reason
   const status = view.isConnected ? 'Connected' : view.isMet ? 'Said hello' : view.isSelf ? null : 'Open to connect'
   return (
-    <div className="absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
+    <div className="sheet-in absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
       <ScreenHeader title="" onBack={nav.close} />
       <div className="flex items-center gap-4">
         <Avatar person={view} size={88} />
@@ -138,7 +138,7 @@ export function CardSheet() {
     .filter((person): person is NonNullable<typeof person> => Boolean(person))
 
   return (
-    <div className="absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
+    <div className="sheet-in absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
       <ScreenHeader title="Let’s connect" onBack={nav.close} />
       <div className="rounded-[32px] bg-navy px-5 py-6 text-white">
         <div className="flex items-center justify-between">
@@ -247,7 +247,7 @@ export function ScanSheet() {
   }, [])
 
   return (
-    <div className="absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
+    <div className="sheet-in absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
       <ScreenHeader title="Scan their code" onBack={nav.close} />
       <div className="overflow-hidden rounded-[28px] bg-navy">
         <video ref={videoRef} muted playsInline className={`aspect-[3/4] w-full object-cover ${camera === 'on' ? '' : 'hidden'}`} />
@@ -303,7 +303,7 @@ export function SetupSheet({ required = false, focus }: { required?: boolean; fo
   }
 
   return (
-    <div className="absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-12">
+    <div className="sheet-in absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-12">
       <ScreenHeader title={required ? 'A minute, then you’re in' : 'What I want'} onBack={required ? undefined : nav.close} />
       <p className="text-sm text-muted">Pick up to three. One line is enough.</p>
       <TopicBlock label="I’m looking for" topics={draft.lookingTopics} onToggle={(topic) => toggleTopic('lookingTopics', topic)} />
@@ -380,7 +380,7 @@ export function GraphSheet() {
   const { state } = useStore()
   const { me, connected, matches } = useMe()
   return (
-    <div className="absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
+    <div className="sheet-in absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
       <ScreenHeader title="My network" onBack={nav.close} />
       <p className="text-sm text-muted">Solid is connected. Dashed is worth the walk. A quiet wedge is a team you haven’t met.</p>
       <NetworkGraph mode="personal" tone="light" className="mt-2 w-full" onPick={(id) => id !== me.id && nav.open({ type: 'person', id })} />
@@ -428,7 +428,7 @@ export function CommitmentSheet() {
   const existing = state.commitments.find((item) => item.participantId === me.id)
   const [text, setText] = useState(existing?.text ?? '')
   return (
-    <div className="absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
+    <div className="sheet-in absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-10">
       <ScreenHeader title="One action" onBack={nav.close} />
       <TextArea value={text} maxLength={280} rows={4} placeholder="What I’ll take back to my team" onChange={(event) => setText(event.target.value)} />
       <div className="mt-4">

@@ -42,6 +42,7 @@ type IconName =
   | 'plus'
   | 'chevron'
   | 'download'
+  | 'trophy'
 
 export function Icon({ name, className = 'h-6 w-6', filled = false }: { name: IconName; className?: string; filled?: boolean }) {
   const common = {
@@ -102,8 +103,10 @@ export function Icon({ name, className = 'h-6 w-6', filled = false }: { name: Ic
     case 'bus':
       return (
         <svg {...common}>
-          <rect x="5" y="4" width="14" height="12" rx="2" />
-          <path d="M5 12h14M8 20v-2M16 20v-2M8 16h.01M16 16h.01" />
+          <rect x="5" y="3.5" width="14" height="14.5" rx="3" />
+          <path d="M5 11h14M5 7h14M8 18v2.2M16 18v2.2M3.2 8.5v3M20.8 8.5v3" />
+          <circle cx="8.6" cy="14.5" r="0.9" fill="currentColor" stroke="none" />
+          <circle cx="15.4" cy="14.5" r="0.9" fill="currentColor" stroke="none" />
         </svg>
       )
     case 'wifi':
@@ -298,6 +301,13 @@ export function Icon({ name, className = 'h-6 w-6', filled = false }: { name: Ic
           <path d="m9 6 6 6-6 6" />
         </svg>
       )
+    case 'trophy':
+      return (
+        <svg {...common}>
+          <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+          <path d="M8 6H5.5a2.5 2.5 0 0 0 2.6 3.4M16 6h2.5a2.5 2.5 0 0 1-2.6 3.4M12 13v3.5M8.5 20h7M9.5 20c0-2 1-3.5 2.5-3.5s2.5 1.5 2.5 3.5" />
+        </svg>
+      )
     case 'download':
       return (
         <svg {...common}>
@@ -309,14 +319,14 @@ export function Icon({ name, className = 'h-6 w-6', filled = false }: { name: Ic
   }
 }
 
-export function ThemeButton() {
+export function ThemeButton({ className = 'bg-paper text-ink shadow-[0_8px_18px_rgba(16,32,51,0.08)]' }: { className?: string }) {
   const { dark, setDark } = useTheme()
   return (
     <button
       type="button"
       onClick={() => setDark(!dark)}
       aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="grid h-9 w-9 place-items-center rounded-full bg-paper text-ink shadow-[0_8px_18px_rgba(16,32,51,0.08)]"
+      className={`grid h-9 w-9 place-items-center rounded-full ${className}`}
     >
       <Icon name={dark ? 'sun' : 'moon'} className="h-5 w-5" />
     </button>
@@ -332,12 +342,20 @@ export function Segmented<T extends string>({
   value: T
   onChange: (id: T) => void
 }) {
+  const index = options.findIndex((option) => option.id === value)
   return (
-    <div className="grid rounded-full bg-sand p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+    <div className="relative grid rounded-full bg-sand p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+      {index >= 0 ? (
+        <span
+          aria-hidden
+          className="absolute inset-y-1 left-1 rounded-full bg-paper shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)]"
+          style={{ width: `calc((100% - 0.5rem) / ${options.length})`, transform: `translateX(${index * 100}%)` }}
+        />
+      ) : null}
       {options.map((option) => {
         const on = option.id === value
         return (
-          <button key={option.id} type="button" onClick={() => onChange(option.id)} className={`h-9 rounded-full px-2 text-sm font-semibold ${on ? 'bg-paper text-ink shadow-sm' : 'text-muted'}`}>
+          <button key={option.id} type="button" onClick={() => onChange(option.id)} className={`relative h-9 rounded-full px-2 text-sm font-semibold transition-colors ${on ? 'text-ink' : 'text-muted'}`}>
             {option.label}
           </button>
         )
@@ -428,7 +446,7 @@ export function ScreenHeader({ title, onBack, action }: { title: string; onBack?
           <Icon name="back" className="h-5 w-5" />
         </button>
       ) : null}
-      <h1 className="flex-1 text-lg font-semibold tracking-tight">{title}</h1>
+      <h1 className="flex-1 text-xl font-bold tracking-tight">{title}</h1>
       {action}
     </div>
   )

@@ -4,7 +4,7 @@ import { firstName, matchesQuery, matchPercent, presentPerson } from '@/lib/logi
 import { useFrame } from '@/state/frame'
 import { useNav, type PeopleFilter } from '@/state/nav'
 import { useMe, useStore } from '@/state/store'
-import { Avatar, Icon } from '@/components/ui'
+import { Avatar, Icon, Segmented } from '@/components/ui'
 
 const TABS = [
   { id: 'circuit' as const, label: 'My Circuit' },
@@ -63,7 +63,7 @@ export function People() {
     <div className={board ? 'grid grid-cols-[minmax(320px,440px)_minmax(0,1fr)] items-start gap-6 px-6 py-2' : 'px-4'}>
     <div>
       <div className="pb-1">
-        <h1 className="text-[1.7rem] font-semibold tracking-tight">People</h1>
+        <h1 className="text-[2rem] font-extrabold leading-tight tracking-tight">People</h1>
         <p className="mt-0.5 text-sm text-muted">Meet, connect, and grow together.</p>
       </div>
       <div
@@ -93,17 +93,15 @@ export function People() {
           ))}
         </div>
         {tab === 'circuit' ? (
-          <div className="mt-3 grid grid-cols-2 rounded-full bg-sand p-1">
-            {(['network', 'list'] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setCircuitView(mode)}
-                className={`h-9 rounded-full text-sm font-semibold capitalize ${circuitView === mode ? 'bg-paper text-ink shadow-sm' : 'text-muted'}`}
-              >
-                {mode}
-              </button>
-            ))}
+          <div className="mt-3">
+            <Segmented
+              options={[
+                { id: 'network', label: 'Network' },
+                { id: 'list', label: 'List' },
+              ]}
+              value={circuitView}
+              onChange={setCircuitView}
+            />
           </div>
         ) : null}
         {nav.dept ? (
@@ -139,7 +137,7 @@ export function People() {
               if (!person) return null
               return (
                 <button key={id} type="button" onClick={() => nav.open({ type: 'person', id })} className="w-16 shrink-0 text-center">
-                  <Avatar person={person} size={52} className="mx-auto" />
+                  <Avatar person={person} size={52} className="mx-auto align-top" />
                   <span className="mt-1 block truncate text-xs font-semibold">{firstName(person.fullName)}</span>
                 </button>
               )
@@ -149,7 +147,7 @@ export function People() {
       ) : null}
 
       {showRoster ? (
-        <div className="mt-1 space-y-2">
+        <div className="stagger mt-1 space-y-2">
           {people.map((person) => {
             const view = presentPerson(state, me.id, person.id)
             if (!view) return null

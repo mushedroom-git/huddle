@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { agendaPhases, clockMinutes, presentPerson } from '@/lib/logic'
 import { useFrame } from '@/state/frame'
 import { useNav, type DayPane } from '@/state/nav'
@@ -12,22 +12,15 @@ const PANES: { id: Extract<DayPane, 'logistics' | 'agenda'>; label: string }[] =
   { id: 'agenda', label: 'Full agenda' },
 ]
 
-const PROGRAMME = [
-  { id: '15', label: '15 Oct' },
-  { id: '16', label: '16 Oct' },
-  { id: '17', label: '17 Oct' },
-]
-
 export function Day() {
   const { state, dispatch } = useStore()
   const nav = useNav()
   const frame = useFrame()
   const { me } = useMe()
   const phases = agendaPhases(state.event.agenda, clockMinutes(state.event))
-  const [programmeDay, setProgrammeDay] = useState('15')
   const venue = state.event.logistics.find((item) => item.title === 'Venue')
   const maps = venue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.body)}` : null
-  const agenda = state.event.agenda.filter((item) => (item.day ?? '15') === programmeDay)
+  const agenda = state.event.agenda
 
   useEffect(() => {
     if (nav.dayPane === 'wall') nav.setTab('ask', { ask: 'wall' })
@@ -39,7 +32,7 @@ export function Day() {
   return (
     <div className={frame === 'phone' ? 'px-4 pb-4' : 'mx-auto w-full max-w-5xl px-8 pb-8'}>
       <div className="pb-3">
-        <h1 className="text-[1.7rem] font-semibold tracking-tight">Today</h1>
+        <h1 className="text-[2rem] font-extrabold leading-tight tracking-tight">Today</h1>
         <p className="mt-0.5 text-sm text-muted">{dayLine(state.event.title, state.event.dateLabel)}</p>
         {state.event.draft ? <p className="mt-1 text-xs text-muted">Draft · organizers can still edit this.</p> : null}
       </div>
@@ -61,23 +54,16 @@ export function Day() {
 
       {menu === 'agenda' && nav.dayPane !== 'photos' ? (
         <div className="mt-1">
-          <div className="mb-3 flex gap-2">
-            {PROGRAMME.map((day) => (
-              <button
-                key={day.id}
-                type="button"
-                onClick={() => setProgrammeDay(day.id)}
-                className={`rounded-full px-3 py-1.5 text-sm font-semibold ${programmeDay === day.id ? 'bg-green text-ink' : 'bg-paper text-ink'}`}
-              >
-                {day.label}
-              </button>
-            ))}
+          <div className="premium-card mb-4 rounded-[24px] px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-green">One-day programme</p>
+            <p className="mt-1 text-sm text-muted">Everything for {shortDate(state.event.dateLabel)}, from arrival to close.</p>
           </div>
           {agenda.length ? (
-            <ol>
+            <ol className="stagger">
               {agenda.map((item, index) => {
                 const phase = phases.get(item.id)
                 const live = phase === 'now'
+                const past = phase === 'past'
                 const last = index === agenda.length - 1
                 const speakers = (item.speakerIds ?? [])
                   .map((id) => presentPerson(state, me.id, id))
@@ -90,14 +76,25 @@ export function Day() {
                     </div>
                     <div className="relative">
                       <span className={`absolute left-1/2 w-px -translate-x-1/2 bg-line ${index === 0 ? 'top-5' : 'top-0'} ${last ? 'h-5' : 'bottom-0'}`} />
-                      <span className={`absolute left-1/2 top-[1.15rem] h-2.5 w-2.5 -translate-x-1/2 rounded-full ${live ? 'bg-green' : 'bg-cream ring-2 ring-line'}`} />
+                      {live ? (
+                        <span className="absolute left-1/2 top-[1.1rem] grid -translate-x-1/2 place-items-center">
+                          <span className="live-dot h-3! w-3! ring-4 ring-green/20" />
+                        </span>
+                      ) : (
+                        <span className={`absolute left-1/2 top-[1.15rem] h-2.5 w-2.5 -translate-x-1/2 rounded-full ${past ? 'bg-line' : 'bg-cream ring-2 ring-line'}`} />
+                      )}
                     </div>
-                    <article className={`mb-3 rounded-2xl bg-paper p-3 md:p-4 ${live ? 'ring-2 ring-green' : ''}`}>
+                    <article className={`mb-3 rounded-[20px] bg-paper p-3.5 transition-opacity md:p-4 ${live ? 'ring-2 ring-green' : ''} ${past ? 'opacity-60' : ''}`}>
                       <div className="flex items-start justify-between gap-2">
                         <span className="min-w-0">
                           <span className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-semibold leading-tight">{item.title}</h3>
-                            {live ? <span className="rounded-full bg-green px-2 py-0.5 text-[10px] font-bold uppercase text-ink">Live</span> : null}
+                            <h3 className="font-bold leading-tight">{item.title}</h3>
+                            {live ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-green/15 px-2 py-0.5 text-[10px] font-bold uppercase text-green">
+                                <span className="live-dot h-1.5! w-1.5!" />
+                                Live
+                              </span>
+                            ) : null}
                             {phase === 'next' ? <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase text-gold-ink">Up next</span> : null}
                           </span>
                           {item.detail ? <p className="mt-1 text-sm leading-snug text-muted">{item.detail}</p> : null}
@@ -141,7 +138,7 @@ export function Day() {
               })}
             </ol>
           ) : (
-            <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">Nothing on the programme for {PROGRAMME.find((day) => day.id === programmeDay)?.label}.</p>
+            <p className="rounded-2xl bg-paper px-4 py-8 text-center text-sm text-muted">Nothing on the programme yet.</p>
           )}
         </div>
       ) : null}
@@ -221,4 +218,9 @@ function dayLine(title: string, dateLabel: string): string {
   const match = dateLabel.match(/(\d{1,2})\s+([A-Za-z]+)/)
   const date = match ? `${match[1]} ${match[2].slice(0, 3)}` : dateLabel
   return `${name} · ${date}`
+}
+
+function shortDate(dateLabel: string): string {
+  const match = dateLabel.match(/(\d{1,2})\s+([A-Za-z]+)/)
+  return match ? `${match[1]} ${match[2].slice(0, 3)}` : dateLabel
 }

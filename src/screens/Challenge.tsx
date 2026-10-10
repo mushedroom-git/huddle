@@ -83,7 +83,7 @@ export function ChallengeSheet() {
   }
 
   return (
-    <div className="absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-16">
+    <div className="sheet-in absolute inset-0 z-40 overflow-y-auto bg-cream px-4 pb-16">
       <ScreenHeader title="One Day Challenge" onBack={nav.close} />
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -191,7 +191,7 @@ export function ChallengeSheet() {
 
       <input ref={input} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
       {consentOpen ? (
-        <div className="absolute inset-0 z-50 flex items-end bg-navy/40" onClick={() => setConsentOpen(false)}>
+        <div className="fade-in absolute inset-0 z-50 flex items-end bg-navy/40" onClick={() => setConsentOpen(false)}>
           <div className="w-full rounded-t-[28px] bg-cream px-5 pb-8 pt-4" onClick={(event) => event.stopPropagation()}>
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
             <h2 className="text-xl font-semibold tracking-tight">Everyone here can see it</h2>

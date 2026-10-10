@@ -60,7 +60,7 @@ export function Me() {
         <div className="flex items-center gap-4 p-4">
           <Avatar person={view} size={96} />
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-semibold leading-tight tracking-tight">{me.fullName}</h1>
+            <h1 className="text-2xl font-extrabold leading-tight tracking-tight">{me.fullName}</h1>
             <p className="mt-0.5 text-sm leading-snug text-muted">{me.jobTitle}</p>
             <span className="mt-2 inline-flex rounded-full bg-sand px-2.5 py-0.5 text-xs font-semibold">{me.department}</span>
           </div>
