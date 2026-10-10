@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
-import { agendaPhases, clockMinutes, presentPerson } from '@/lib/logic'
+import { agendaPhases, clockMinutes, presentPerson, toMinutes } from '@/lib/logic'
 import { useFrame } from '@/state/frame'
 import { useNav, type DayPane } from '@/state/nav'
 import { useMe, useStore } from '@/state/store'
 import { Avatar, Icon, Segmented } from '@/components/ui'
 import { PhotoWall } from './Moments'
-import type { LogisticsIcon } from '@/lib/types'
+import type { AgendaItem, LogisticsIcon } from '@/lib/types'
 
 const PANES: { id: Extract<DayPane, 'logistics' | 'agenda'>; label: string }[] = [
   { id: 'logistics', label: 'Getting here' },
@@ -17,7 +17,8 @@ export function Day() {
   const nav = useNav()
   const frame = useFrame()
   const { me } = useMe()
-  const phases = agendaPhases(state.event.agenda, clockMinutes(state.event))
+  const minutes = clockMinutes(state.event)
+  const phases = agendaPhases(state.event.agenda, minutes)
   const venue = state.event.logistics.find((item) => item.title === 'Venue')
   const maps = venue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.body)}` : null
   const agenda = state.event.agenda
@@ -54,25 +55,25 @@ export function Day() {
 
       {menu === 'agenda' && nav.dayPane !== 'photos' ? (
         <div className="mt-1">
-          <div className="premium-card mb-4 rounded-[24px] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-green">One-day programme</p>
-            <p className="mt-1 text-sm text-muted">Everything for {shortDate(state.event.dateLabel)}, from arrival to close.</p>
-          </div>
+          {agenda.length ? <DaySummary agenda={agenda} minutes={minutes} live={agenda.find((item) => phases.get(item.id) === 'now') ?? null} dateLabel={state.event.dateLabel} /> : null}
           {agenda.length ? (
             <ol className="stagger">
               {agenda.map((item, index) => {
                 const phase = phases.get(item.id)
                 const live = phase === 'now'
                 const past = phase === 'past'
+                const soon = live || phase === 'next'
+                const kind = KINDS[item.kind] ?? KINDS.session
+                const action = `mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${soon ? 'bg-green text-on' : 'bg-green/15 text-green'}`
                 const last = index === agenda.length - 1
                 const speakers = (item.speakerIds ?? [])
                   .map((id) => presentPerson(state, me.id, id))
                   .filter((person): person is NonNullable<typeof person> => Boolean(person))
                 return (
                   <li key={item.id} className="grid grid-cols-[3.1rem_1.1rem_minmax(0,1fr)] gap-2">
-                    <div className="pt-3 text-right text-[11px] leading-tight tabular-nums text-muted">
-                      <p>{item.time}</p>
-                      <p>{item.end}</p>
+                    <div className="pt-3.5 text-right text-[11px] leading-tight tabular-nums text-muted">
+                      <p className={`text-[13px] font-bold ${live ? 'text-green' : 'text-ink'}`}>{item.time}</p>
+                      <p className="mt-0.5">{item.end}</p>
                     </div>
                     <div className="relative">
                       <span className={`absolute left-1/2 w-px -translate-x-1/2 bg-line ${index === 0 ? 'top-5' : 'top-0'} ${last ? 'h-5' : 'bottom-0'}`} />
@@ -87,6 +88,10 @@ export function Day() {
                     <article className={`mb-3 rounded-[20px] bg-paper p-3.5 transition-opacity md:p-4 ${live ? 'ring-2 ring-green' : ''} ${past ? 'opacity-60' : ''}`}>
                       <div className="flex items-start justify-between gap-2">
                         <span className="min-w-0">
+                          <span className={`mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${live ? 'text-green' : 'text-muted'}`}>
+                            <Icon name={kind.icon} className="h-3.5 w-3.5" />
+                            {kind.label}
+                          </span>
                           <span className="flex flex-wrap items-center gap-2">
                             <h3 className="font-bold leading-tight">{item.title}</h3>
                             {live ? (
@@ -109,25 +114,25 @@ export function Day() {
                         ) : null}
                       </div>
                       {item.kind === 'break' ? (
-                        <button type="button" onClick={() => nav.setTab('people', { filter: 'matches' })} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green px-3 py-1.5 text-sm font-semibold text-ink">
+                        <button type="button" onClick={() => nav.setTab('people', { filter: 'matches' })} className={action}>
                           <Icon name="people" className="h-4 w-4" />
                           Find matches
                         </button>
                       ) : null}
                       {item.kind === 'qa' ? (
-                        <button type="button" onClick={() => nav.setTab('ask', { ask: 'qa' })} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green px-3 py-1.5 text-sm font-semibold text-ink">
+                        <button type="button" onClick={() => nav.setTab('ask', { ask: 'qa' })} className={action}>
                           <Icon name="message" className="h-4 w-4" />
                           Ask a question
                         </button>
                       ) : null}
                       {/commitment/i.test(item.title) ? (
-                        <button type="button" onClick={() => nav.setTab('ask', { ask: 'wall' })} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green px-3 py-1.5 text-sm font-semibold text-ink">
+                        <button type="button" onClick={() => nav.setTab('ask', { ask: 'wall' })} className={action}>
                           <Icon name="leaf" className="h-4 w-4" />
                           Open commitments
                         </button>
                       ) : null}
                       {/feedback/i.test(item.title) ? (
-                        <button type="button" onClick={() => nav.setTab('ask', { ask: 'feedback' })} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green px-3 py-1.5 text-sm font-semibold text-ink">
+                        <button type="button" onClick={() => nav.setTab('ask', { ask: 'feedback' })} className={action}>
                           <Icon name="star" className="h-4 w-4" />
                           Rate the day
                         </button>
@@ -220,7 +225,39 @@ function dayLine(title: string, dateLabel: string): string {
   return `${name} · ${date}`
 }
 
-function shortDate(dateLabel: string): string {
-  const match = dateLabel.match(/(\d{1,2})\s+([A-Za-z]+)/)
-  return match ? `${match[1]} ${match[2].slice(0, 3)}` : dateLabel
+const KINDS: Record<string, { icon: 'clipboard' | 'people' | 'food' | 'message'; label: string }> = {
+  session: { icon: 'clipboard', label: 'Session' },
+  break: { icon: 'people', label: 'Networking break' },
+  food: { icon: 'food', label: 'Meal' },
+  qa: { icon: 'message', label: 'Q&A' },
+}
+
+function DaySummary({ agenda, minutes, live, dateLabel }: { agenda: AgendaItem[]; minutes: number; live: AgendaItem | null; dateLabel: string }) {
+  const first = agenda[0]
+  const last = agenda[agenda.length - 1]
+  const start = toMinutes(first.time)
+  const end = Math.max(toMinutes(last.end), start + 1)
+  const share = Math.round(Math.min(100, Math.max(0, ((minutes - start) / (end - start)) * 100)))
+
+  return (
+    <section className="hero-panel mb-5 rounded-[26px] p-5">
+      <p className="eyebrow text-green">{dateLabel}</p>
+      <h2 className="mt-1.5 text-[1.45rem] font-extrabold leading-tight tracking-tight">One-day programme</h2>
+      <p className="mt-1 text-sm text-white/65 tabular-nums">
+        {first.time} – {last.end} · {agenda.length} sessions
+      </p>
+      <div className="mt-4 flex items-center gap-3">
+        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/12">
+          <span className="grow-x block h-full rounded-full bg-green" style={{ width: `${share}%` }} />
+        </span>
+        <span className="text-xs font-semibold text-white/70 tabular-nums">{share}% through</span>
+      </div>
+      {live ? (
+        <p className="mt-3 flex items-center gap-2 text-sm text-white/80">
+          <span className="live-dot" />
+          Now: <span className="font-bold text-white">{live.title}</span>
+        </p>
+      ) : null}
+    </section>
+  )
 }

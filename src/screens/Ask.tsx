@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { firstName, hasVoted, presentPerson, voteCount } from '@/lib/logic'
+import { agendaPhases, clockMinutes, firstName, hasVoted, presentPerson, voteCount } from '@/lib/logic'
 import { useFrame } from '@/state/frame'
 import { useNav } from '@/state/nav'
 import { useMe, useStore } from '@/state/store'
@@ -77,6 +77,7 @@ function Questions() {
 
   return (
     <div>
+      <QaHeader asked={visible.length} />
       {state.event.questionsOpen ? (
         <form
           onSubmit={(event) => {
@@ -105,7 +106,8 @@ function Questions() {
               <span className={`mr-2 inline-block h-4 w-4 rounded-full border align-[-3px] ${anonymous ? 'border-ink bg-green' : 'border-line'}`} />
               Anonymous
             </button>
-            <button type="submit" disabled={!text.trim()} className="rounded-full bg-green px-4 py-2 text-sm font-semibold text-ink disabled:opacity-40">
+            <button type="submit" disabled={!text.trim()} className="inline-flex items-center gap-1.5 rounded-full bg-green px-4 py-2 text-sm font-bold text-on disabled:opacity-40">
+              <Icon name="send" className="h-4 w-4" />
               Send
             </button>
           </div>
@@ -118,15 +120,15 @@ function Questions() {
         {SORTS.map((item) => {
           const on = sort === item.id
           return (
-            <button key={item.id} type="button" onClick={() => setSort(item.id)} className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${on ? 'bg-paper text-ink shadow-sm' : 'text-muted'}`}>
-              {item.label} {counts[item.id]}
+            <button key={item.id} type="button" onClick={() => setSort(item.id)} className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${on ? 'bg-ink text-cream' : 'text-muted'}`}>
+              {item.label} <span className="tabular-nums opacity-70">{counts[item.id]}</span>
             </button>
           )
         })}
       </div>
 
       <div className="stagger mt-3 space-y-3 xl:columns-2 xl:gap-3 xl:space-y-0">
-        {questions.map((question) => {
+        {questions.map((question, index) => {
           const count = voteCount(state, question.id)
           const voted = hasVoted(state, question.id, me.id)
           const author = question.authorId ? presentPerson(state, me.id, question.authorId) : null
@@ -148,7 +150,12 @@ function Questions() {
                 <span className="text-[10px] font-medium leading-none">{voted ? 'Voted' : 'Vote'}</span>
               </button>
               <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-medium leading-snug">{question.text}</p>
+                {sort === 'top' && index < 3 && count > 0 ? (
+                  <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gold-ink">
+                    <Icon name="trophy" className="h-3 w-3" />#{index + 1} most voted
+                  </span>
+                ) : null}
+                <p className="text-[15px] font-semibold leading-snug">{question.text}</p>
                 {question.topics.length ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {question.topics.map((topic) => (
@@ -159,7 +166,8 @@ function Questions() {
                   </div>
                 ) : null}
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-                  <span>
+                  <span className="inline-flex items-center gap-1.5">
+                    {author && !question.isAnonymous ? <Avatar person={author} size={20} className="align-top" /> : null}
                     {byline}
                     {question.isAnswered ? ' · Answered' : ''}
                     {question.isHidden ? ' · Hidden' : ''}
@@ -220,63 +228,145 @@ function Questions() {
   )
 }
 
+function QaHeader({ asked }: { asked: number }) {
+  const { state } = useStore()
+  const { me } = useMe()
+  const session = state.event.agenda.find((item) => item.kind === 'qa')
+  const phase = session ? agendaPhases(state.event.agenda, clockMinutes(state.event)).get(session.id) : null
+  const votes = state.votes.length
+  const yours = state.votes.filter((vote) => vote.voterId === me.id).length
+
+  return (
+    <section className="hero-panel mb-3 rounded-[26px] p-5">
+      <p className="eyebrow flex items-center gap-2 text-green">
+        {phase === 'now' ? <span className="live-dot" /> : null}
+        {phase === 'now' ? 'Live now' : phase === 'past' ? 'Answered earlier today' : session ? `Today at ${session.time}` : 'Q&A'}
+      </p>
+      <h2 className="mt-2 text-[1.45rem] font-extrabold leading-tight tracking-tight">{session?.title ?? 'Questions for the leaders'}</h2>
+      <p className="mt-1 text-sm text-white/65">The most-voted questions are answered first.</p>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {[
+          { label: 'Questions', value: asked },
+          { label: 'Votes', value: votes },
+          { label: 'Your votes', value: yours },
+        ].map((stat) => (
+          <span key={stat.label} className="rounded-2xl bg-white/[0.07] px-3 py-2.5 ring-1 ring-white/10">
+            <span className="block text-2xl font-extrabold leading-none tabular-nums">{stat.value}</span>
+            <span className="mt-1 block text-[11px] font-medium text-white/60">{stat.label}</span>
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function CommitmentWall() {
   const { state, dispatch } = useStore()
-  const { me } = useMe()
+  const { me, view: self } = useMe()
   const nav = useNav()
   const mine = state.commitments.find((item) => item.participantId === me.id)
   const [draft, setDraft] = useState(mine?.text ?? '')
+  const [editing, setEditing] = useState(!mine)
   const wall = state.commitments.filter((item) => item.participantId !== me.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   return (
-    <div className="mt-2 space-y-4 xl:grid xl:grid-cols-[minmax(280px,22rem)_minmax(0,1fr)] xl:items-start xl:gap-10 xl:space-y-0">
+    <div className="mt-2 space-y-5 xl:grid xl:grid-cols-[minmax(280px,22rem)_minmax(0,1fr)] xl:items-start xl:gap-10 xl:space-y-0">
       <section>
-        <h2 className="text-2xl font-semibold tracking-tight">Commitment wall</h2>
-        <p className="mt-1 font-medium">One action to take back to my team</p>
-        <div className="mt-3 rounded-[24px] bg-paper p-4 ring-1 ring-line focus-within:ring-2 focus-within:ring-green">
-          <textarea
-            value={draft}
-            maxLength={280}
-            rows={4}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder="One action to take back"
-            className="w-full resize-none bg-transparent text-[15px] font-medium leading-snug outline-none placeholder:text-muted/60"
-          />
-          <p className="mt-2 text-sm text-muted">Publish one named commitment. Profile visibility and organizer moderation apply.</p>
-          <button
-            type="button"
-            disabled={!draft.trim()}
-            onClick={() => dispatch({ type: 'saveCommitment', text: draft })}
-            className="mt-3 h-12 w-full rounded-full bg-ink text-[15px] font-semibold text-cream disabled:opacity-40"
-          >
-            Publish commitment
-          </button>
-        </div>
+        <h2 className="text-2xl font-extrabold tracking-tight">Commitment wall</h2>
+        <p className="mt-0.5 text-sm text-muted">One action each of us takes back to our team.</p>
+        {mine && !editing ? (
+          <div className="challenge-panel mt-3 rounded-[26px] p-5">
+            <p className="eyebrow flex items-center gap-1.5 text-green">
+              <Icon name="check" className="h-3.5 w-3.5" />
+              Your commitment
+            </p>
+            <p className="mt-2 text-lg font-bold leading-snug">“{mine.text}”</p>
+            <div className="mt-4 flex items-center gap-2">
+              {self ? <Avatar person={self} size={28} className="align-top ring-2 ring-white/20" /> : null}
+              <span className="mr-auto text-xs text-white/65">On the wall for everyone</span>
+              <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-white/15">
+                <Icon name="edit" className="h-3.5 w-3.5" />
+                Edit
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-[24px] bg-paper p-4 ring-2 ring-green">
+            <p className="eyebrow flex items-center gap-1.5 text-green">
+              <Icon name="leaf" className="h-3.5 w-3.5" />
+              {mine ? 'Edit your commitment' : 'Add yours'}
+            </p>
+            <textarea
+              value={draft}
+              maxLength={280}
+              rows={3}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="One action to take back to your team"
+              className="mt-2 w-full resize-none bg-transparent text-[15px] font-medium leading-snug outline-none placeholder:text-muted/60"
+            />
+            <p className="text-xs text-muted">Shown with your name. Organizers can moderate the wall.</p>
+            <div className="mt-3 flex gap-2">
+              {mine ? (
+                <button type="button" onClick={() => { setDraft(mine.text); setEditing(false) }} className="h-12 rounded-full bg-sand px-5 text-[15px] font-semibold">
+                  Cancel
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={!draft.trim()}
+                onClick={() => {
+                  dispatch({ type: 'saveCommitment', text: draft })
+                  setEditing(false)
+                }}
+                className="h-12 flex-1 rounded-full bg-green text-[15px] font-bold text-on disabled:opacity-40"
+              >
+                {mine ? 'Save' : 'Publish commitment'}
+              </button>
+            </div>
+          </div>
+        )}
       </section>
       <section>
+        <div className="mb-2 flex items-baseline justify-between px-1">
+          <h3 className="font-bold">From the room</h3>
+          <span className="text-xs font-medium text-muted tabular-nums">{wall.length} commitments</span>
+        </div>
         {wall.length ? (
-          <div className="space-y-3 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-4 md:space-y-0">
-            {wall.map((item) => {
+          <div className="stagger columns-2 gap-3 md:columns-3">
+            {wall.map((item, index) => {
               const view = presentPerson(state, me.id, item.participantId)
               if (!view) return null
               return (
-                <button key={item.participantId} type="button" onClick={() => nav.open({ type: 'person', id: item.participantId })} className="flex w-full gap-3 text-left">
-                  <Avatar person={view} size={40} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold">{view.fullName}</span>
-                    <span className="mt-0.5 block text-sm leading-snug text-muted">{item.text}</span>
+                <button
+                  key={item.participantId}
+                  type="button"
+                  onClick={() => nav.open({ type: 'person', id: item.participantId })}
+                  className="mb-3 block w-full break-inside-avoid rounded-[20px] bg-paper p-3.5 text-left"
+                >
+                  <span className="block font-serif text-3xl leading-none text-green" aria-hidden>
+                    “
+                  </span>
+                  <span className={`block font-semibold leading-snug ${index % 3 === 0 ? 'text-[15px]' : 'text-sm'}`}>{item.text}</span>
+                  <span className="mt-3 flex items-center gap-2">
+                    <Avatar person={view} size={26} className="align-top" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-semibold">{firstName(view.fullName)}</span>
+                      <span className="block truncate text-[11px] text-muted">{view.department}</span>
+                    </span>
                   </span>
                 </button>
               )
             })}
           </div>
         ) : (
-          <p className="py-8 text-center text-sm text-muted">No commitments yet.</p>
+          <p className="py-8 text-center text-sm text-muted">No commitments yet. Be the first.</p>
         )}
       </section>
     </div>
   )
 }
+
+const RATINGS = ['Tap a star to rate', 'Not useful', 'Somewhat useful', 'Useful', 'Very useful', 'Outstanding']
 
 function FeedbackForm() {
   const { state, dispatch } = useStore()
@@ -287,28 +377,47 @@ function FeedbackForm() {
   const [change, setChange] = useState('')
 
   if (!state.event.feedbackOpen) return <p className="mt-6 text-sm text-muted">Feedback is closed.</p>
-  if (done) return <p className="mt-8 text-center text-lg font-semibold">Thank you. One note is enough.</p>
+  if (done) {
+    return (
+      <div className="challenge-panel rise mt-2 rounded-[26px] p-6 text-center">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-green text-on">
+          <Icon name="check" className="h-7 w-7" />
+        </span>
+        <p className="mt-4 text-xl font-extrabold tracking-tight">Thank you.</p>
+        <p className="mt-1 text-sm text-white/70">Your note goes straight to the organizers. One is enough.</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="mt-2 md:max-w-xl">
-      <h2 className="text-lg font-semibold">Overall rating</h2>
-      <div className="mt-3 flex gap-2">
-        {[1, 2, 3, 4, 5].map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-label={`${value} out of 5`}
-            onClick={() => setScore(value)}
-            className={`grid h-11 w-11 place-items-center rounded-xl text-sm font-semibold ${score === value ? 'bg-ink text-cream' : 'bg-paper text-ink'}`}
-          >
-            {value}
-          </button>
-        ))}
-      </div>
-      <p className="mt-2 text-sm text-muted">1 — not useful · 5 — very useful</p>
-      <Note label="Most useful part" value={best} onChange={setBest} placeholder="The conversation I want to remember." />
-      <Note label="One thing to change" value={change} onChange={setChange} placeholder="What would help next time." />
-      <p className="mt-3 text-sm text-muted">One submission per participant. Organizers can read it.</p>
+    <div className="mt-2 space-y-3 md:max-w-xl">
+      <section className="rounded-[26px] bg-paper p-5 text-center">
+        <p className="eyebrow text-muted">Rate the day</p>
+        <h2 className="mt-1 text-xl font-extrabold tracking-tight">How useful was today?</h2>
+        <div className="mt-4 flex justify-center gap-1.5">
+          {[1, 2, 3, 4, 5].map((value) => {
+            const on = value <= score
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-label={`${value} out of 5`}
+                aria-pressed={score === value}
+                onClick={() => setScore(value)}
+                className={`grid h-12 w-12 place-items-center rounded-2xl transition-colors ${on ? 'bg-green/15 text-green' : 'bg-sand text-muted'}`}
+              >
+                <Icon name="star" filled={on} className={`h-7 w-7 ${on ? 'pop' : ''}`} />
+              </button>
+            )
+          })}
+        </div>
+        <p className={`mt-3 text-sm font-semibold ${score ? 'text-green' : 'text-muted'}`}>{RATINGS[score]}</p>
+      </section>
+      <section className="space-y-4 rounded-[26px] bg-paper p-5">
+        <Note label="Most useful part" value={best} onChange={setBest} placeholder="The conversation I want to remember." />
+        <Note label="One thing to change" value={change} onChange={setChange} placeholder="What would help next time." />
+      </section>
+      <p className="px-1 text-xs text-muted">One submission per participant. It is not linked to your name.</p>
       <button
         type="button"
         disabled={score === 0}
@@ -318,8 +427,9 @@ function FeedbackForm() {
             entry: { metScore: score, timeScore: score, takeawayScore: score, best: best.trim(), change: change.trim() },
           })
         }
-        className="mt-4 h-12 w-full rounded-full bg-ink text-[15px] font-semibold text-cream disabled:opacity-40"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-green text-[15px] font-bold text-on disabled:bg-sand disabled:text-muted"
       >
+        <Icon name="send" className="h-4 w-4" />
         Submit feedback
       </button>
     </div>
@@ -328,11 +438,11 @@ function FeedbackForm() {
 
 function Note({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
   return (
-    <label className="mt-5 block">
-      <span className="text-sm font-medium">
+    <label className="block">
+      <span className="text-sm font-semibold">
         {label} <span className="font-normal text-muted">(optional)</span>
       </span>
-      <textarea value={value} maxLength={280} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} rows={3} className="mt-2 w-full resize-none rounded-2xl bg-paper px-4 py-3 text-[15px] outline-none placeholder:text-muted/60" />
+      <textarea value={value} maxLength={280} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} rows={3} className="mt-2 w-full resize-none rounded-2xl bg-sand/60 px-4 py-3 text-[15px] outline-none ring-green/40 placeholder:text-muted/60 focus:ring-2" />
     </label>
   )
 }
